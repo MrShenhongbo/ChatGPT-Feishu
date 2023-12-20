@@ -9,9 +9,11 @@ const MsgTable = aircode.db.table("msg"); // 用于保存历史会话的表
 const FEISHU_APP_ID = process.env.APPID || ""; // 飞书的应用 ID
 const FEISHU_APP_SECRET = process.env.SECRET || ""; // 飞书的应用的 Secret
 const FEISHU_BOTNAME = process.env.BOTNAME || ""; // 飞书机器人的名字
+
+const OPENAI_URL = process.env.URL || ""; // OpenAI 的 Url
 const OPENAI_KEY = process.env.KEY || ""; // OpenAI 的 Key
 const OPENAI_MODEL = process.env.MODEL || "gpt-3.5-turbo"; // 使用的模型
-const OPENAI_MAX_TOKEN = process.env.MAX_TOKEN || 1024; // 最大 token 的值
+const OPENAI_MAX_TOKEN = process.env.MAX_TOKEN || 3000; // 最大 token 的值
 
 const client = new lark.Client({
   appId: FEISHU_APP_ID,
@@ -125,6 +127,10 @@ async function cmdHelp(messageId) {
 Usage:
     /clear    清除上下文
     /help     获取更多帮助
+
+Notice:
+    开始一段新的对话前请发送 '/clear' 清除上下文，避免历史会话影响模型准确度和过度消耗token额度。
+    历史会话最大为3000token，超出则丢弃最早一次。
   `
   await reply(messageId, helpText);
 }
@@ -132,7 +138,7 @@ Usage:
 // 清除记忆指令
 async function cmdClear(sessionId, messageId) {
   await clearConversation(sessionId)
-  await reply(messageId, "✅记忆已清除");
+  await reply(messageId, "✅会话记录已清除，可以开始一段新的会话了");
 }
 
 // 通过 OpenAI API 获取回复
@@ -146,7 +152,7 @@ async function getOpenAIReply(prompt) {
   var config = {
     method: "post",
     maxBodyLength: Infinity,
-    url: "https://api.openai.com/v1/chat/completions",
+    url: `${OPENAI_URL}/v1/chat/completions`,
     headers: {
       Authorization: `Bearer ${OPENAI_KEY}`,
       "Content-Type": "application/json",
